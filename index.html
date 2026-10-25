@@ -1,0 +1,388 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Comparative Subject & Habit Tracker</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-annotation@3.0.1/dist/chartjs-plugin-annotation.min.js"></script>
+  <script src="https://unpkg.com/lucide@latest"></script>
+</head>
+<body class="bg-slate-900 text-slate-100 min-h-screen font-sans antialiased">
+
+  <header class="border-b border-slate-800 bg-slate-950/60 sticky top-0 z-50 backdrop-blur-md">
+    <div class="max-w-7xl mx-auto px-4 py-4 flex flex-col sm:flex-row items-center justify-between gap-4">
+      <div class="flex items-center gap-3">
+        <div class="p-2 bg-indigo-600/20 text-indigo-400 rounded-lg border border-indigo-500/30">
+          <i data-lucide="bar-chart-3" class="w-6 h-6"></i>
+        </div>
+        <div>
+          <h1 class="text-xl font-bold tracking-tight text-white">Comparative Subject Tracker</h1>
+          <p class="text-xs text-slate-400">Time-Decayed Effort Share & Output Dashboard</p>
+        </div>
+      </div>
+      
+      <!-- Controls Header: Fast-Forward Button + Date Picker -->
+      <div class="flex items-center gap-3">
+        <button 
+          onclick="advanceToNextDay()" 
+          class="bg-indigo-600 hover:bg-indigo-500 active:scale-95 text-white text-xs font-semibold px-3 py-1.5 rounded-lg transition-all shadow-md flex items-center gap-1.5 cursor-pointer border border-indigo-400/30">
+          <i data-lucide="fast-forward" class="w-3.5 h-3.5"></i> +1 Day (Fast Forward)
+        </button>
+
+        <div class="flex items-center gap-2 bg-slate-800/80 px-3 py-1.5 rounded-lg border border-slate-700">
+          <i data-lucide="calendar" class="w-4 h-4 text-slate-400"></i>
+          <label for="date-picker" class="text-xs text-slate-400 font-medium">Log Date:</label>
+          <input 
+            type="date" 
+            id="date-picker" 
+            class="bg-transparent text-sm text-indigo-300 font-medium focus:outline-none cursor-pointer"
+          />
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <main class="max-w-7xl mx-auto px-4 py-8 grid grid-cols-1 lg:grid-cols-12 gap-8">
+    
+    <!-- LEFT COLUMN: Checklist -->
+    <section class="lg:col-span-5 flex flex-col gap-6">
+      <div class="bg-slate-800/40 border border-slate-700/60 rounded-xl p-5 backdrop-blur-sm flex items-center justify-between">
+        <div>
+          <span class="text-xs uppercase tracking-wider text-slate-400 font-semibold">Today's Check-offs</span>
+          <div class="text-2xl font-black text-white mt-1">
+            <span id="completed-count">0</span> / <span id="total-count">12</span>
+            <span class="text-sm font-normal text-slate-400 ml-1">Items Done</span>
+          </div>
+        </div>
+        <div id="progress-ring" class="text-indigo-400 text-sm font-bold bg-indigo-500/10 px-3 py-2 rounded-lg border border-indigo-500/20">
+          0% Complete
+        </div>
+      </div>
+
+      <div class="bg-slate-800/40 border border-slate-700/60 rounded-xl p-5 backdrop-blur-sm">
+        <h2 class="text-sm font-bold text-indigo-400 uppercase tracking-wider mb-4 flex items-center gap-2">
+          <i data-lucide="book-open" class="w-4 h-4"></i> GATE Subjects (7)
+        </h2>
+        <div id="gate-tasks-container" class="space-y-3"></div>
+      </div>
+
+      <div class="bg-slate-800/40 border border-slate-700/60 rounded-xl p-5 backdrop-blur-sm">
+        <h2 class="text-sm font-bold text-emerald-400 uppercase tracking-wider mb-4 flex items-center gap-2">
+          <i data-lucide="check-circle-2" class="w-4 h-4"></i> Daily Routines (5)
+        </h2>
+        <div id="routine-tasks-container" class="space-y-3"></div>
+      </div>
+    </section>
+
+    <!-- RIGHT COLUMN: Analytics -->
+    <section class="lg:col-span-7 flex flex-col gap-6">
+      <div class="bg-slate-800/40 border border-slate-700/60 rounded-xl p-5 backdrop-blur-sm">
+        <div class="flex items-center justify-between mb-2">
+          <h2 class="text-base font-semibold text-white flex items-center gap-2">
+            <i data-lucide="bar-chart-2" class="w-5 h-5 text-indigo-400"></i> Comparative Effort Share (%)
+          </h2>
+          <span class="text-xs text-slate-400 bg-slate-700/50 px-2 py-1 rounded">Time-Decayed (0.90/day)</span>
+        </div>
+        <p class="text-xs text-slate-400 mb-4">
+          Shows relative effort distribution. Dashed line marks group average (<span id="avg-indicator" class="text-amber-300 font-medium">8.3%</span>). Red bars indicate lagging subjects.
+        </p>
+        <div class="relative h-[340px] w-full">
+          <canvas id="barChart"></canvas>
+        </div>
+      </div>
+
+      <div class="bg-slate-800/40 border border-slate-700/60 rounded-xl p-5 backdrop-blur-sm">
+        <div class="flex items-center justify-between mb-2">
+          <h2 class="text-base font-semibold text-white flex items-center gap-2">
+            <i data-lucide="trending-up" class="w-5 h-5 text-emerald-400"></i> Daily Output Trend
+          </h2>
+          <span class="text-xs text-slate-400 bg-slate-700/50 px-2 py-1 rounded">Timeline</span>
+        </div>
+        <p class="text-xs text-slate-400 mb-4">Total tasks completed per calendar day across your timeline.</p>
+        <div class="relative h-[220px] w-full">
+          <canvas id="lineChart"></canvas>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <script>
+    // Explicitly register Annotation plugin for Chart.js
+    if (window['chartjs-plugin-annotation']) {
+      Chart.register(window['chartjs-plugin-annotation']);
+    }
+
+    const API_BASE = "http://127.0.0.1:8000/api";
+    let selectedDate = new Date().toISOString().split('T')[0];
+    let barChartInstance = null;
+    let lineChartInstance = null;
+
+    document.getElementById('date-picker').value = selectedDate;
+    document.getElementById('date-picker').addEventListener('change', (e) => {
+      selectedDate = e.target.value;
+      loadDashboard();
+    });
+
+    async function advanceToNextDay() {
+      try {
+        const res = await fetch(`${API_BASE}/simulation/advance-day`, { method: 'POST' });
+        const data = await res.json();
+        
+        selectedDate = data.simulated_date;
+        document.getElementById('date-picker').value = selectedDate;
+        
+        await loadDashboard();
+      } catch (err) {
+        console.error("Failed to advance day:", err);
+      }
+    }
+
+    async function init() {
+      lucide.createIcons();
+      try {
+        const res = await fetch(`${API_BASE}/simulation/current-date`);
+        const data = await res.json();
+        selectedDate = data.simulated_date;
+        document.getElementById('date-picker').value = selectedDate;
+      } catch (e) {
+        console.warn("Using local date");
+      }
+      await loadDashboard();
+    }
+
+    async function loadDashboard() {
+      await Promise.all([
+        fetchAndRenderChecklist(),
+        fetchAndRenderBarChart(),
+        fetchAndRenderLineChart()
+      ]);
+    }
+
+    function formatTimestamp(ts) {
+      if (!ts) return '';
+      // Safe parsing for cross-browser ISO compatibility
+      const parsedDate = new Date(ts.replace(' ', 'T'));
+      return isNaN(parsedDate.getTime()) 
+        ? '' 
+        : parsedDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    }
+
+    async function fetchAndRenderChecklist() {
+      try {
+        const res = await fetch(`${API_BASE}/logs?log_date=${selectedDate}`);
+        const data = await res.json();
+        
+        const gateContainer = document.getElementById('gate-tasks-container');
+        const routineContainer = document.getElementById('routine-tasks-container');
+        
+        gateContainer.innerHTML = '';
+        routineContainer.innerHTML = '';
+
+        let completedCount = 0;
+        const totalCount = data.logs.length;
+
+        data.logs.forEach(task => {
+          if (task.completed) completedCount++;
+          
+          const isGate = task.category === 'GATE';
+          const container = isGate ? gateContainer : routineContainer;
+          const checkTimeText = formatTimestamp(task.completed_at);
+
+          const card = document.createElement('div');
+          card.className = `flex items-center justify-between p-3 rounded-lg border transition-all ${
+            task.completed 
+              ? 'bg-slate-800/80 border-indigo-500/40 text-slate-200' 
+              : 'bg-slate-900/50 border-slate-700/50 text-slate-400 hover:border-slate-600'
+          }`;
+
+          card.innerHTML = `
+            <label class="flex items-center justify-between cursor-pointer w-full select-none">
+              <div class="flex items-center gap-3">
+                <input 
+                  type="checkbox" 
+                  ${task.completed ? 'checked' : ''} 
+                  onchange="toggleTask('${task.task_id}', this.checked)"
+                  class="w-5 h-5 rounded border-slate-600 text-indigo-600 focus:ring-indigo-500 bg-slate-900 cursor-pointer"
+                />
+                <span class="text-sm font-medium ${task.completed ? 'text-white line-through opacity-80' : 'text-slate-200'}">
+                  ${task.title}
+                </span>
+              </div>
+              ${task.completed && checkTimeText ? `
+                <span class="text-[10px] font-mono text-indigo-300 bg-indigo-950/80 px-2 py-0.5 rounded border border-indigo-500/30">
+                  Checked at ${checkTimeText}
+                </span>
+              ` : ''}
+            </label>
+          `;
+          container.appendChild(card);
+        });
+
+        document.getElementById('completed-count').innerText = completedCount;
+        document.getElementById('total-count').innerText = totalCount;
+        const pct = totalCount > 0 ? Math.round((completedCount / totalCount) * 100) : 0;
+        document.getElementById('progress-ring').innerText = `${pct}% Complete`;
+
+      } catch (err) {
+        console.error("Failed to fetch logs:", err);
+      }
+    }
+
+    async function toggleTask(taskId, completed) {
+      try {
+        await fetch(`${API_BASE}/logs/toggle`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            task_id: taskId,
+            log_date: selectedDate,
+            completed: completed
+          })
+        });
+        await loadDashboard();
+      } catch (err) {
+        console.error("Failed to toggle task:", err);
+      }
+    }
+
+    async function fetchAndRenderBarChart() {
+      try {
+        const res = await fetch(`${API_BASE}/analytics/comparative`);
+        const data = await res.json();
+        
+        document.getElementById('avg-indicator').innerText = `${data.group_average_pct}%`;
+
+        const labels = data.tasks.map(t => t.title);
+        const shares = data.tasks.map(t => t.effort_share_pct);
+        const groupAvg = data.group_average_pct;
+
+        const backgroundColors = data.tasks.map(t => 
+          t.effort_share_pct < groupAvg ? 'rgba(239, 68, 68, 0.75)' : 'rgba(99, 102, 241, 0.75)'
+        );
+        const borderColors = data.tasks.map(t => 
+          t.effort_share_pct < groupAvg ? 'rgb(239, 68, 68)' : 'rgb(99, 102, 241)'
+        );
+
+        const ctx = document.getElementById('barChart').getContext('2d');
+        if (barChartInstance) barChartInstance.destroy();
+
+        barChartInstance = new Chart(ctx, {
+          type: 'bar',
+          data: {
+            labels: labels,
+            datasets: [{
+              label: 'Effort Share (%)',
+              data: shares,
+              backgroundColor: backgroundColors,
+              borderColor: borderColors,
+              borderWidth: 1.5,
+              borderRadius: 4
+            }]
+          },
+          options: {
+            indexAxis: 'y',
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+              legend: { display: false },
+              tooltip: {
+                callbacks: {
+                  label: (ctx) => ` Share: ${ctx.raw}% (Group Avg: ${groupAvg}%)`
+                }
+              },
+              annotation: {
+                annotations: {
+                  line1: {
+                    type: 'line',
+                    xMin: groupAvg,
+                    xMax: groupAvg,
+                    borderColor: 'rgba(245, 158, 11, 0.9)',
+                    borderWidth: 2,
+                    borderDash: [5, 5],
+                    label: {
+                      display: true,
+                      content: `Avg: ${groupAvg}%`,
+                      position: 'end',
+                      backgroundColor: 'rgba(245, 158, 11, 0.2)',
+                      color: '#fef08a',
+                      font: { size: 10 }
+                    }
+                  }
+                }
+              }
+            },
+            scales: {
+              x: {
+                beginAtZero: true,
+                grid: { color: 'rgba(51, 65, 85, 0.4)' },
+                ticks: { color: '#94a3b8', callback: (val) => val + '%' }
+              },
+              y: {
+                grid: { display: false },
+                ticks: { color: '#e2e8f0', font: { size: 11 } }
+              }
+            }
+          }
+        });
+
+      } catch (err) {
+        console.error("Failed to fetch comparative analytics:", err);
+      }
+    }
+
+    async function fetchAndRenderLineChart() {
+      try {
+        const res = await fetch(`${API_BASE}/analytics/line-trend`);
+        const data = await res.json();
+
+        const dates = data.trend.map(d => d.log_date);
+        const totals = data.trend.map(d => d.total_completed);
+
+        const ctx = document.getElementById('lineChart').getContext('2d');
+        if (lineChartInstance) lineChartInstance.destroy();
+
+        lineChartInstance = new Chart(ctx, {
+          type: 'line',
+          data: {
+            labels: dates.length > 0 ? dates : ['Today'],
+            datasets: [{
+              label: 'Completed Tasks',
+              data: totals.length > 0 ? totals : [0],
+              borderColor: '#10b981',
+              backgroundColor: 'rgba(16, 185, 129, 0.1)',
+              fill: true,
+              tension: 0.3,
+              pointRadius: 4,
+              pointBackgroundColor: '#10b981'
+            }]
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: { legend: { display: false } },
+            scales: {
+              x: {
+                grid: { color: 'rgba(51, 65, 85, 0.4)' },
+                ticks: { color: '#94a3b8', font: { size: 10 } }
+              },
+              y: {
+                beginAtZero: true,
+                max: 12,
+                grid: { color: 'rgba(51, 65, 85, 0.4)' },
+                ticks: { color: '#94a3b8', stepSize: 2 }
+              }
+            }
+          }
+        });
+
+      } catch (err) {
+        console.error("Failed to fetch line trend analytics:", err);
+      }
+    }
+
+    window.onload = init;
+  </script>
+</body>
+</html>
