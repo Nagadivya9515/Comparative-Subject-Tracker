@@ -1,0 +1,10 @@
+version: '3.8'
+
+services:
+  web:
+    build: .
+    container_name: subject_tracker_backend
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./database.db:/app/database.db
