@@ -1,106 +1,187 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" id="app-html" class="dark">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Comparative Subject & Habit Tracker</title>
+  <title>Comparative Subject Tracker v2.0</title>
+  
   <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+    }
+  </script>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-annotation@3.0.1/dist/chartjs-plugin-annotation.min.js"></script>
   <script src="https://unpkg.com/lucide@latest"></script>
-</head>
-<body class="bg-slate-900 text-slate-100 min-h-screen font-sans antialiased">
+  <style>
+    /* Smooth transitions when switching light/dark themes */
+    body, header, div, section, main, button, input, select {
+      transition: background-color 0.25s ease, border-color 0.25s ease, color 0.25s ease;
+    }
 
-  <header class="border-b border-slate-800 bg-slate-950/60 sticky top-0 z-50 backdrop-blur-md">
+    /* Active Spotlight Target Elevation */
+    .tour-spotlight-active {
+      position: relative !important;
+      z-index: 55 !important;
+      box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.8), 0 0 25px rgba(99, 102, 241, 0.5) !important;
+      border-radius: 0.75rem !important;
+      transition: all 0.3s ease-in-out !important;
+    }
+  </style>
+</head>
+<body class="bg-slate-50 dark:bg-slate-900 text-slate-900 dark:text-slate-100 min-h-screen font-sans antialiased">
+
+  <!-- HEADER -->
+  <header class="border-b border-slate-200 dark:border-slate-800 bg-white/80 dark:bg-slate-950/60 sticky top-0 z-40 backdrop-blur-md">
     <div class="max-w-7xl mx-auto px-4 py-4 flex flex-col sm:flex-row items-center justify-between gap-4">
       <div class="flex items-center gap-3">
-        <div class="p-2 bg-indigo-600/20 text-indigo-400 rounded-lg border border-indigo-500/30">
+        <div class="p-2 bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 rounded-lg border border-indigo-500/20">
           <i data-lucide="bar-chart-3" class="w-6 h-6"></i>
         </div>
         <div>
-          <h1 class="text-xl font-bold tracking-tight text-white">Comparative Subject Tracker</h1>
-          <p class="text-xs text-slate-400">Time-Decayed Effort Share & Output Dashboard</p>
+          <h1 class="text-xl font-bold tracking-tight text-slate-900 dark:text-white flex items-center gap-2">
+            Comparative Subject Tracker 
+            <span class="text-xs font-mono bg-indigo-500/10 text-indigo-600 dark:text-indigo-300 px-2 py-0.5 rounded border border-indigo-500/20">v2.0</span>
+          </h1>
+          <p class="text-xs text-slate-500 dark:text-slate-400">Time-Decayed Effort Share & Matrix Skill Mapping</p>
         </div>
       </div>
       
-      <!-- Controls Header: Fast-Forward Button + Date Picker -->
-      <div class="flex items-center gap-3">
+      <!-- Action Controls -->
+      <div class="flex items-center gap-2 flex-wrap">
+        <button 
+          onclick="openGuideModal()" 
+          class="bg-amber-500/10 hover:bg-amber-500/20 text-amber-600 dark:text-amber-300 text-xs font-semibold px-3 py-1.5 rounded-lg transition-all border border-amber-500/30 flex items-center gap-1.5 cursor-pointer">
+          <i data-lucide="help-circle" class="w-4 h-4 text-amber-500"></i> Tour
+        </button>
+
+        <button 
+          onclick="openAddTaskModal()" 
+          class="bg-emerald-600 hover:bg-emerald-500 active:scale-95 text-white text-xs font-semibold px-3 py-1.5 rounded-lg transition-all shadow-md flex items-center gap-1.5 cursor-pointer border border-emerald-400/30">
+          <i data-lucide="plus" class="w-3.5 h-3.5"></i> Add Task / Sprint
+        </button>
+
         <button 
           onclick="advanceToNextDay()" 
           class="bg-indigo-600 hover:bg-indigo-500 active:scale-95 text-white text-xs font-semibold px-3 py-1.5 rounded-lg transition-all shadow-md flex items-center gap-1.5 cursor-pointer border border-indigo-400/30">
-          <i data-lucide="fast-forward" class="w-3.5 h-3.5"></i> +1 Day (Fast Forward)
+          <i data-lucide="fast-forward" class="w-3.5 h-3.5"></i> +1 Day
         </button>
 
-        <div class="flex items-center gap-2 bg-slate-800/80 px-3 py-1.5 rounded-lg border border-slate-700">
-          <i data-lucide="calendar" class="w-4 h-4 text-slate-400"></i>
-          <label for="date-picker" class="text-xs text-slate-400 font-medium">Log Date:</label>
-          <input 
-            type="date" 
-            id="date-picker" 
-            class="bg-transparent text-sm text-indigo-300 font-medium focus:outline-none cursor-pointer"
-          />
-        </div>
+        <button 
+          onclick="jumpToToday()" 
+          class="bg-indigo-500/10 hover:bg-indigo-500/20 text-indigo-600 dark:text-indigo-300 text-xs font-semibold px-3 py-1.5 rounded-lg transition-all border border-indigo-500/30 flex items-center gap-1.5 cursor-pointer"
+          title="Reset view to today's date">
+          <i data-lucide="calendar-check-2" class="w-4 h-4 text-indigo-500 dark:text-indigo-400"></i> Today
+        </button>
+
+        <!-- <div id="date-picker-container" class="flex items-center gap-2 bg-slate-200 dark:bg-slate-800 px-3 py-1.5 rounded-lg border border-slate-300 dark:border-slate-700">
+          <i data-lucide="calendar" class="w-4 h-4 text-slate-500 dark:text-slate-400"></i>
+          <input type="date" id="date-picker" class="bg-transparent text-sm text-indigo-600 dark:text-indigo-300 font-medium focus:outline-none cursor-pointer" />
+        </div> -->
+
+        <div class="flex items-center gap-1 bg-slate-200 dark:bg-slate-800 p-1 rounded-lg border border-slate-300 dark:border-slate-700">
+  <!-- PREVIOUS DAY BUTTON -->
+  <button 
+    onclick="changeDay(-1)" 
+    class="px-2 py-1 hover:bg-slate-300 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 rounded text-xs font-semibold flex items-center gap-1 transition-all cursor-pointer"
+    title="Go to Previous Day">
+    <i data-lucide="chevron-left" class="w-4 h-4"></i> Prev
+  </button>
+
+  <!-- DATE PICKER INPUT -->
+  <div id="date-picker-container" class="flex items-center gap-1 px-1">
+    <i data-lucide="calendar" class="w-3.5 h-3.5 text-slate-500 dark:text-slate-400"></i>
+    <input type="date" id="date-picker" class="bg-transparent text-xs text-indigo-600 dark:text-indigo-300 font-bold focus:outline-none cursor-pointer" />
+  </div>
+
+  <!-- NEXT DAY BUTTON -->
+  <button 
+    onclick="changeDay(1)" 
+    class="px-2 py-1 hover:bg-slate-300 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 rounded text-xs font-semibold flex items-center gap-1 transition-all cursor-pointer"
+    title="Go to Next Day">
+    Next <i data-lucide="chevron-right" class="w-4 h-4"></i>
+  </button>
+</div>
+        <button 
+          onclick="toggleTheme()" 
+          id="theme-toggle-btn"
+          class="bg-slate-200 hover:bg-slate-300 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 text-xs font-semibold px-3 py-1.5 rounded-lg transition-all border border-slate-300 dark:border-slate-700 flex items-center gap-1.5 cursor-pointer"
+          title="Toggle Light / Dark Theme">
+          <i id="theme-icon" data-lucide="sun" class="w-4 h-4 text-amber-500"></i>
+          <span id="theme-text">Light</span>
+        </button>
       </div>
     </div>
   </header>
 
   <main class="max-w-7xl mx-auto px-4 py-8 grid grid-cols-1 lg:grid-cols-12 gap-8">
     
-    <!-- LEFT COLUMN: Checklist -->
+    <!-- LEFT COLUMN -->
     <section class="lg:col-span-5 flex flex-col gap-6">
-      <div class="bg-slate-800/40 border border-slate-700/60 rounded-xl p-5 backdrop-blur-sm flex items-center justify-between">
+      <div id="sprint-banner-container"></div>
+
+      <!-- CHECK-OFF STATUS CARD -->
+      <div class="bg-white dark:bg-slate-800/40 border border-slate-200 dark:border-slate-700/60 rounded-xl p-5 shadow-sm dark:shadow-none flex items-center justify-between">
         <div>
-          <span class="text-xs uppercase tracking-wider text-slate-400 font-semibold">Today's Check-offs</span>
-          <div class="text-2xl font-black text-white mt-1">
-            <span id="completed-count">0</span> / <span id="total-count">12</span>
-            <span class="text-sm font-normal text-slate-400 ml-1">Items Done</span>
+          <span class="text-xs uppercase tracking-wider text-slate-500 dark:text-slate-400 font-semibold">Today's Check-offs</span>
+          <div class="text-2xl font-black text-slate-900 dark:text-white mt-1">
+            <span id="completed-count">0</span> / <span id="total-count">0</span>
+            <span class="text-sm font-normal text-slate-500 dark:text-slate-400 ml-1">Items Done</span>
           </div>
         </div>
-        <div id="progress-ring" class="text-indigo-400 text-sm font-bold bg-indigo-500/10 px-3 py-2 rounded-lg border border-indigo-500/20">
+        <div id="progress-ring" class="text-indigo-600 dark:text-indigo-400 text-sm font-bold bg-indigo-500/10 px-3 py-2 rounded-lg border border-indigo-500/20">
           0% Complete
         </div>
       </div>
 
-      <div class="bg-slate-800/40 border border-slate-700/60 rounded-xl p-5 backdrop-blur-sm">
-        <h2 class="text-sm font-bold text-indigo-400 uppercase tracking-wider mb-4 flex items-center gap-2">
-          <i data-lucide="book-open" class="w-4 h-4"></i> GATE Subjects (7)
+      <!-- GATE SUBJECTS CHECKLIST -->
+      <div class="bg-white dark:bg-slate-800/40 border border-slate-200 dark:border-slate-700/60 rounded-xl p-5 shadow-sm dark:shadow-none">
+        <h2 class="text-sm font-bold text-indigo-600 dark:text-indigo-400 uppercase tracking-wider mb-4 flex items-center gap-2">
+          <i data-lucide="book-open" class="w-4 h-4"></i> GATE Subjects
         </h2>
         <div id="gate-tasks-container" class="space-y-3"></div>
       </div>
 
-      <div class="bg-slate-800/40 border border-slate-700/60 rounded-xl p-5 backdrop-blur-sm">
-        <h2 class="text-sm font-bold text-emerald-400 uppercase tracking-wider mb-4 flex items-center gap-2">
-          <i data-lucide="check-circle-2" class="w-4 h-4"></i> Daily Routines (5)
+      <!-- ROUTINES CHECKLIST -->
+      <div class="bg-white dark:bg-slate-800/40 border border-slate-200 dark:border-slate-700/60 rounded-xl p-5 shadow-sm dark:shadow-none">
+        <h2 class="text-sm font-bold text-emerald-600 dark:text-emerald-400 uppercase tracking-wider mb-4 flex items-center gap-2">
+          <i data-lucide="check-circle-2" class="w-4 h-4"></i> Daily Routines
         </h2>
         <div id="routine-tasks-container" class="space-y-3"></div>
       </div>
     </section>
 
-    <!-- RIGHT COLUMN: Analytics -->
+    <!-- RIGHT COLUMN -->
     <section class="lg:col-span-7 flex flex-col gap-6">
-      <div class="bg-slate-800/40 border border-slate-700/60 rounded-xl p-5 backdrop-blur-sm">
+      
+      <!-- BAR CHART CARD -->
+      <div class="bg-white dark:bg-slate-800/40 border border-slate-200 dark:border-slate-700/60 rounded-xl p-5 shadow-sm dark:shadow-none">
         <div class="flex items-center justify-between mb-2">
-          <h2 class="text-base font-semibold text-white flex items-center gap-2">
-            <i data-lucide="bar-chart-2" class="w-5 h-5 text-indigo-400"></i> Comparative Effort Share (%)
+          <h2 class="text-base font-semibold text-slate-900 dark:text-white flex items-center gap-2">
+            <i data-lucide="bar-chart-2" class="w-5 h-5 text-indigo-500 dark:text-indigo-400"></i> Comparative Effort Share (%)
           </h2>
-          <span class="text-xs text-slate-400 bg-slate-700/50 px-2 py-1 rounded">Time-Decayed (0.90/day)</span>
+          <span id="decay-badge" class="text-xs text-indigo-600 dark:text-indigo-300 bg-indigo-500/10 dark:bg-indigo-950/80 px-2.5 py-1 rounded border border-indigo-500/20 dark:border-indigo-500/30">
+            Decay α = 0.90/day
+          </span>
         </div>
-        <p class="text-xs text-slate-400 mb-4">
-          Shows relative effort distribution. Dashed line marks group average (<span id="avg-indicator" class="text-amber-300 font-medium">8.3%</span>). Red bars indicate lagging subjects.
+        <p class="text-xs text-slate-500 dark:text-slate-400 mb-4">
+          Includes <strong>Weighted Hours</strong> & <strong>Matrix Skill Transfers</strong>. Dashed line marks group average (<span id="avg-indicator" class="text-amber-500 dark:text-amber-300 font-medium">8.3%</span>). Red bars reflect lagging subjects.
         </p>
         <div class="relative h-[340px] w-full">
           <canvas id="barChart"></canvas>
         </div>
       </div>
 
-      <div class="bg-slate-800/40 border border-slate-700/60 rounded-xl p-5 backdrop-blur-sm">
+      <!-- LINE CHART CARD -->
+      <div class="bg-white dark:bg-slate-800/40 border border-slate-200 dark:border-slate-700/60 rounded-xl p-5 shadow-sm dark:shadow-none">
         <div class="flex items-center justify-between mb-2">
-          <h2 class="text-base font-semibold text-white flex items-center gap-2">
-            <i data-lucide="trending-up" class="w-5 h-5 text-emerald-400"></i> Daily Output Trend
+          <h2 class="text-base font-semibold text-slate-900 dark:text-white flex items-center gap-2">
+            <i data-lucide="trending-up" class="w-5 h-5 text-emerald-500 dark:text-emerald-400"></i> Daily Workload Volume (Hours)
           </h2>
-          <span class="text-xs text-slate-400 bg-slate-700/50 px-2 py-1 rounded">Timeline</span>
+          <span class="text-xs text-slate-500 dark:text-slate-400 bg-slate-200 dark:bg-slate-700/50 px-2 py-1 rounded">Timeline</span>
         </div>
-        <p class="text-xs text-slate-400 mb-4">Total tasks completed per calendar day across your timeline.</p>
+        <p class="text-xs text-slate-500 dark:text-slate-400 mb-4">Total weighted hours logged per calendar day across your timeline.</p>
         <div class="relative h-[220px] w-full">
           <canvas id="lineChart"></canvas>
         </div>
@@ -108,8 +189,105 @@
     </section>
   </main>
 
+  <!-- ADD TASK / SPRINT MODAL -->
+  <div id="add-task-modal" class="hidden fixed inset-0 bg-slate-950/70 dark:bg-slate-950/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+    <div class="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl max-w-lg w-full p-6 space-y-4 shadow-2xl">
+      <h3 class="text-lg font-bold text-slate-900 dark:text-white flex items-center gap-2">
+        <i data-lucide="plus-circle" class="w-5 h-5 text-emerald-500"></i> Create Task or Sprint
+      </h3>
+      
+      <div class="space-y-3">
+        <div>
+          <label class="text-xs text-slate-500 dark:text-slate-400 block mb-1">Title / Activity Name</label>
+          <input type="text" id="modal-task-title" placeholder="e.g. FastAPI & SQLite Workshop" class="w-full bg-slate-100 dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-lg p-2.5 text-sm text-slate-900 dark:text-white focus:outline-none focus:border-indigo-500">
+        </div>
+        
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="text-xs text-slate-500 dark:text-slate-400 block mb-1">Category</label>
+            <select id="modal-task-category" onchange="toggleSprintOptions()" class="w-full bg-slate-100 dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-lg p-2.5 text-sm text-slate-900 dark:text-white focus:outline-none">
+              <option value="GATE">GATE Revision</option>
+              <option value="Routine">Daily Routine</option>
+              <option value="Sprint">⚡ 3–5 Day Focus Sprint</option>
+            </select>
+          </div>
+          <div id="sprint-days-box" class="hidden">
+            <label class="text-xs text-amber-600 dark:text-amber-300 block mb-1">Sprint Duration</label>
+            <select id="modal-sprint-days" class="w-full bg-slate-100 dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-lg p-2.5 text-sm text-slate-900 dark:text-white">
+              <option value="3">3 Days Focus</option>
+              <option value="4">4 Days Focus</option>
+              <option value="5">5 Days Focus</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- MULTI-SELECT GATE SKILL TAGS -->
+        <div>
+          <div class="flex items-center justify-between mb-1.5">
+            <label class="text-xs font-semibold text-indigo-600 dark:text-indigo-300">Target GATE CS Subject Tags</label>
+            <span id="weight-split-badge" class="text-[10px] text-slate-500 dark:text-slate-400 bg-slate-100 dark:bg-slate-900 px-2 py-0.5 rounded border border-slate-300 dark:border-slate-700">0 Selected (0%)</span>
+          </div>
+          
+          <div id="gate-tag-chips" class="grid grid-cols-2 gap-2 max-h-40 overflow-y-auto p-2 bg-slate-100 dark:bg-slate-900/60 rounded-lg border border-slate-300 dark:border-slate-700">
+            <button type="button" onclick="toggleTag('gate_em', this)" class="tag-chip text-left text-xs p-2 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800/50 text-slate-700 dark:text-slate-300 hover:border-indigo-500 cursor-pointer">Engineering Math</button>
+            <button type="button" onclick="toggleTag('gate_ds', this)" class="tag-chip text-left text-xs p-2 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800/50 text-slate-700 dark:text-slate-300 hover:border-indigo-500 cursor-pointer">Data Structures & Algo</button>
+            <button type="button" onclick="toggleTag('gate_algo', this)" class="tag-chip text-left text-xs p-2 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800/50 text-slate-700 dark:text-slate-300 hover:border-indigo-500 cursor-pointer">Algorithms Design</button>
+            <button type="button" onclick="toggleTag('gate_os', this)" class="tag-chip text-left text-xs p-2 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800/50 text-slate-700 dark:text-slate-300 hover:border-indigo-500 cursor-pointer">Operating Systems</button>
+            <button type="button" onclick="toggleTag('gate_dbms', this)" class="tag-chip text-left text-xs p-2 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800/50 text-slate-700 dark:text-slate-300 hover:border-indigo-500 cursor-pointer">DBMS & SQL</button>
+            <button type="button" onclick="toggleTag('gate_cn', this)" class="tag-chip text-left text-xs p-2 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800/50 text-slate-700 dark:text-slate-300 hover:border-indigo-500 cursor-pointer">Computer Networks</button>
+            <button type="button" onclick="toggleTag('gate_toc', this)" class="tag-chip text-left text-xs p-2 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800/50 text-slate-700 dark:text-slate-300 hover:border-indigo-500 cursor-pointer">TOC & Compilers</button>
+            <button type="button" onclick="toggleTag('rt_aptitude', this)" class="tag-chip text-left text-xs p-2 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800/50 text-slate-700 dark:text-slate-300 hover:border-indigo-500 cursor-pointer">Aptitude & Logic</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="flex justify-end gap-3 pt-2">
+        <button onclick="closeAddTaskModal()" class="px-4 py-2 bg-slate-200 dark:bg-slate-700 text-xs text-slate-700 dark:text-white font-medium rounded-lg cursor-pointer">Cancel</button>
+        <button onclick="submitNewTask()" class="px-4 py-2 bg-emerald-600 hover:bg-emerald-500 text-xs text-white font-bold rounded-lg cursor-pointer shadow">Create Task</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- THEME-ADAPTIVE SPOTLIGHT GUIDED TOUR OVERLAY -->
+  <div id="tour-overlay" class="hidden fixed inset-0 z-50 pointer-events-auto">
+    <!-- Dynamic Translucent Backdrop (Matches Theme) -->
+    <div id="tour-backdrop" class="fixed inset-0 bg-slate-900/40 dark:bg-slate-950/80 backdrop-blur-sm transition-all duration-300"></div>
+
+    <!-- Floating Popover Card (Theme-Adaptive) -->
+    <div id="tour-popover" class="absolute bg-white dark:bg-slate-900 border border-slate-300 dark:border-indigo-500/50 text-slate-900 dark:text-slate-100 rounded-xl p-5 w-80 shadow-2xl space-y-3 transition-all duration-300 z-50">
+      <div class="flex items-center justify-between border-b border-slate-200 dark:border-slate-800 pb-2">
+        <span id="tour-step-badge" class="text-[10px] font-bold uppercase tracking-wider bg-indigo-500/10 dark:bg-indigo-500/20 text-indigo-600 dark:text-indigo-300 px-2 py-0.5 rounded border border-indigo-500/20 dark:border-indigo-500/30">Step 1 of 4</span>
+        <button onclick="endTour()" class="text-slate-400 hover:text-slate-700 dark:hover:text-white text-xs cursor-pointer">Skip Tour ✕</button>
+      </div>
+      <h4 id="tour-title" class="text-sm font-bold text-slate-900 dark:text-white flex items-center gap-2">Title</h4>
+      <p id="tour-description" class="text-xs text-slate-600 dark:text-slate-300 leading-relaxed">Description goes here.</p>
+      <div class="flex items-center justify-between pt-2 border-t border-slate-200 dark:border-slate-800">
+        <button id="tour-prev-btn" onclick="prevTourStep()" class="text-xs text-slate-400 hover:text-slate-800 dark:hover:text-white disabled:opacity-30 cursor-pointer">Previous</button>
+        <button id="tour-next-btn" onclick="nextTourStep()" class="px-3.5 py-1.5 bg-indigo-600 hover:bg-indigo-500 text-xs text-white font-bold rounded-lg shadow cursor-pointer transition-all">Next →</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODERN TOAST NOTIFICATION CONTAINER -->
+<div id="toast-container" class="fixed bottom-5 right-5 z-50 flex flex-col gap-2 pointer-events-none"></div>
+
+<!-- CUSTOM CONFIRM DELETE MODAL -->
+<div id="confirm-modal" class="hidden fixed inset-0 bg-slate-950/70 dark:bg-slate-950/80 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+  <div class="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl max-w-sm w-full p-5 space-y-4 shadow-2xl">
+    <div class="flex items-center gap-3">
+      <div class="p-2 bg-red-500/10 text-red-600 dark:text-red-400 rounded-lg">
+        <i data-lucide="alert-triangle" class="w-5 h-5"></i>
+      </div>
+      <h4 class="text-sm font-bold text-slate-900 dark:text-white">Delete Confirmation</h4>
+    </div>
+    <p class="text-xs text-slate-600 dark:text-slate-300">Are you sure you want to delete this item? This action cannot be undone.</p>
+    <div class="flex justify-end gap-2 pt-1">
+      <button onclick="closeConfirmModal()" class="px-3.5 py-1.5 bg-slate-200 dark:bg-slate-700 text-xs text-slate-700 dark:text-slate-200 font-medium rounded-lg cursor-pointer">Cancel</button>
+      <button id="confirm-delete-btn" class="px-3.5 py-1.5 bg-red-600 hover:bg-red-500 text-xs text-white font-bold rounded-lg cursor-pointer shadow">Delete</button>
+    </div>
+  </div>
+</div>
   <script>
-    // Explicitly register Annotation plugin for Chart.js
     if (window['chartjs-plugin-annotation']) {
       Chart.register(window['chartjs-plugin-annotation']);
     }
@@ -125,17 +303,118 @@
       loadDashboard();
     });
 
+    function openAddTaskModal() { document.getElementById('add-task-modal').classList.remove('hidden'); }
+    function closeAddTaskModal() { document.getElementById('add-task-modal').classList.add('hidden'); }
+
+    function toggleSprintOptions() {
+      const cat = document.getElementById('modal-task-category').value;
+      const sprintBox = document.getElementById('sprint-days-box');
+      if (cat === 'Sprint') {
+        sprintBox.classList.remove('hidden');
+      } else {
+        sprintBox.classList.add('hidden');
+      }
+    }
+
+    // MULTI-TAG SELECTION
+    let selectedTags = new Set();
+
+    function toggleTag(tagId, element) {
+      const isDark = document.documentElement.classList.contains('dark');
+      if (selectedTags.has(tagId)) {
+        selectedTags.delete(tagId);
+        element.classList.remove('bg-indigo-600', 'text-white', 'font-bold', 'border-indigo-500', 'bg-indigo-600/30', 'text-indigo-200');
+        if (isDark) {
+          element.classList.add('bg-slate-800/50', 'border-slate-700', 'text-slate-300');
+        } else {
+          element.classList.add('bg-white', 'border-slate-300', 'text-slate-700');
+        }
+      } else {
+        selectedTags.add(tagId);
+        if (isDark) {
+          element.classList.remove('bg-slate-800/50', 'border-slate-700', 'text-slate-300');
+          element.classList.add('bg-indigo-600/30', 'border-indigo-400', 'text-indigo-200', 'font-bold');
+        } else {
+          element.classList.remove('bg-white', 'border-slate-300', 'text-slate-700');
+          element.classList.add('bg-indigo-600', 'border-indigo-600', 'text-white', 'font-bold');
+        }
+      }
+      updateWeightSplitBadge();
+    }
+
+    function updateWeightSplitBadge() {
+      const count = selectedTags.size;
+      const badge = document.getElementById('weight-split-badge');
+      if (count === 0) {
+        badge.innerText = '0 Selected (0%)';
+      } else {
+        const split = (100 / count).toFixed(1);
+        badge.innerText = `${count} Selected (${split}% each)`;
+      }
+    }
+
+    async function submitNewTask() {
+      const title = document.getElementById('modal-task-title').value.trim();
+      const category = document.getElementById('modal-task-category').value;
+      if (!title) return alert("Please enter a title.");
+
+      const isSprint = (category === 'Sprint');
+      const sprintDays = parseInt(document.getElementById('modal-sprint-days').value) || 3;
+
+      const payload = {
+        title: title,
+        category: isSprint ? 'Project Sprint' : category,
+        is_sprint: isSprint,
+        sprint_duration_days: sprintDays,
+        selected_gate_tags: Array.from(selectedTags)
+      };
+
+      try {
+        await fetch(`${API_BASE}/tasks`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+        
+        selectedTags.clear();
+        document.getElementById('modal-task-title').value = '';
+        closeAddTaskModal();
+        await loadDashboard();
+      } catch (err) {
+        console.error("Failed to create task:", err);
+      }
+    }
+
+    async function deleteTask(taskId) {
+      if (!confirm("Are you sure you want to delete this item?")) return;
+      try {
+        await fetch(`${API_BASE}/tasks/${taskId}`, { method: 'DELETE' });
+        await loadDashboard();
+      } catch (err) {
+        console.error("Failed to delete task:", err);
+      }
+    }
+
     async function advanceToNextDay() {
       try {
         const res = await fetch(`${API_BASE}/simulation/advance-day`, { method: 'POST' });
         const data = await res.json();
-        
         selectedDate = data.simulated_date;
         document.getElementById('date-picker').value = selectedDate;
-        
         await loadDashboard();
       } catch (err) {
         console.error("Failed to advance day:", err);
+      }
+    }
+
+    async function jumpToToday() {
+      try {
+        await fetch(`${API_BASE}/simulation/current-date`);
+        selectedDate = new Date().toISOString().split('T')[0];
+        document.getElementById('date-picker').value = selectedDate;
+        await loadDashboard();
+      } catch (err) {
+        console.error("Failed to reset to today:", err);
       }
     }
 
@@ -158,79 +437,135 @@
         fetchAndRenderBarChart(),
         fetchAndRenderLineChart()
       ]);
-    }
-
-    function formatTimestamp(ts) {
-      if (!ts) return '';
-      // Safe parsing for cross-browser ISO compatibility
-      const parsedDate = new Date(ts.replace(' ', 'T'));
-      return isNaN(parsedDate.getTime()) 
-        ? '' 
-        : parsedDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+      lucide.createIcons();
     }
 
     async function fetchAndRenderChecklist() {
-      try {
-        const res = await fetch(`${API_BASE}/logs?log_date=${selectedDate}`);
-        const data = await res.json();
-        
-        const gateContainer = document.getElementById('gate-tasks-container');
-        const routineContainer = document.getElementById('routine-tasks-container');
-        
-        gateContainer.innerHTML = '';
-        routineContainer.innerHTML = '';
+  try {
+    const res = await fetch(`${API_BASE}/logs?log_date=${selectedDate}`);
+    const data = await res.json();
+    
+    const gateContainer = document.getElementById('gate-tasks-container');
+    const routineContainer = document.getElementById('routine-tasks-container');
+    const sprintBannerContainer = document.getElementById('sprint-banner-container');
+    
+    gateContainer.innerHTML = '';
+    routineContainer.innerHTML = '';
+    sprintBannerContainer.innerHTML = '';
 
-        let completedCount = 0;
-        const totalCount = data.logs.length;
+    let completedCount = 0;
+    const totalCount = data.logs.length;
 
-        data.logs.forEach(task => {
-          if (task.completed) completedCount++;
-          
-          const isGate = task.category === 'GATE';
-          const container = isGate ? gateContainer : routineContainer;
-          const checkTimeText = formatTimestamp(task.completed_at);
+    data.logs.forEach(task => {
+      if (task.completed) completedCount++;
 
-          const card = document.createElement('div');
-          card.className = `flex items-center justify-between p-3 rounded-lg border transition-all ${
-            task.completed 
-              ? 'bg-slate-800/80 border-indigo-500/40 text-slate-200' 
-              : 'bg-slate-900/50 border-slate-700/50 text-slate-400 hover:border-slate-600'
-          }`;
+      // Active Sprint Banner with Volume Target Calculation (e.g. 3 Days x 5 Hours = 15.0h)
+      if (task.is_sprint) {
+        const targetSprintHours = task.sprint_duration_days * 5.0; // Target Volume (e.g. 15.0h)
+        const currentHours = parseFloat(task.hours_spent) || 0.0;
+        const sprintProgressPct = Math.min(100, Math.round((currentHours / targetSprintHours) * 100));
 
-          card.innerHTML = `
-            <label class="flex items-center justify-between cursor-pointer w-full select-none">
-              <div class="flex items-center gap-3">
-                <input 
-                  type="checkbox" 
-                  ${task.completed ? 'checked' : ''} 
-                  onchange="toggleTask('${task.task_id}', this.checked)"
-                  class="w-5 h-5 rounded border-slate-600 text-indigo-600 focus:ring-indigo-500 bg-slate-900 cursor-pointer"
-                />
-                <span class="text-sm font-medium ${task.completed ? 'text-white line-through opacity-80' : 'text-slate-200'}">
-                  ${task.title}
-                </span>
+        const sprintCard = document.createElement('div');
+        sprintCard.className = "mb-4 bg-gradient-to-r from-amber-500/10 via-slate-100 to-white dark:from-amber-950/70 dark:via-slate-800 dark:to-slate-900 border border-amber-500/40 rounded-xl p-4 shadow-md transition-all";
+        sprintCard.innerHTML = `
+          <div class="flex flex-col gap-3">
+            <div class="flex items-center justify-between">
+              <div>
+                <div class="flex items-center gap-2">
+                  <span class="text-xs font-bold text-amber-600 dark:text-amber-400 uppercase tracking-wider">⚡ Active ${task.sprint_duration_days}-Day Sprint</span>
+                  <span class="text-[10px] bg-amber-500/20 text-amber-700 dark:text-amber-300 px-2 py-0.5 rounded border border-amber-500/30">Damping α = 0.97</span>
+                </div>
+                <h3 class="text-base font-bold text-slate-900 dark:text-white mt-1">${task.title}</h3>
+                <p class="text-[11px] text-slate-500 dark:text-slate-400">Target Workload: ${currentHours.toFixed(1)}h / ${targetSprintHours.toFixed(1)}h logged</p>
               </div>
-              ${task.completed && checkTimeText ? `
-                <span class="text-[10px] font-mono text-indigo-300 bg-indigo-950/80 px-2 py-0.5 rounded border border-indigo-500/30">
-                  Checked at ${checkTimeText}
-                </span>
-              ` : ''}
-            </label>
-          `;
-          container.appendChild(card);
-        });
 
-        document.getElementById('completed-count').innerText = completedCount;
-        document.getElementById('total-count').innerText = totalCount;
-        const pct = totalCount > 0 ? Math.round((completedCount / totalCount) * 100) : 0;
-        document.getElementById('progress-ring').innerText = `${pct}% Complete`;
+              <div class="flex items-center gap-2">
+                <input 
+                  type="number" 
+                  step="0.5" 
+                  value="${task.hours_spent}" 
+                  onchange="toggleTask('${task.task_id}', true, this.value)" 
+                  class="w-16 bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 text-xs text-amber-600 dark:text-amber-300 font-bold p-1 rounded text-center focus:outline-none" 
+                  title="Logged Hours"
+                />
+                <span class="text-xs text-slate-500 dark:text-slate-400">hrs</span>
+                <button onclick="deleteTask('${task.task_id}')" class="text-slate-400 hover:text-red-500 p-1 ml-1 cursor-pointer">
+                  <i data-lucide="trash-2" class="w-4 h-4"></i>
+                </button>
+              </div>
+            </div>
 
-      } catch (err) {
-        console.error("Failed to fetch logs:", err);
+            <!-- SPRINT VOLUME PROGRESS BAR -->
+            <div>
+              <div class="flex justify-between text-[10px] text-slate-500 dark:text-slate-400 mb-1">
+                <span>Sprint Progress</span>
+                <span class="font-bold text-amber-600 dark:text-amber-400">${sprintProgressPct}% Completed</span>
+              </div>
+              <div class="w-full bg-slate-200 dark:bg-slate-700/60 rounded-full h-2 overflow-hidden">
+                <div class="bg-gradient-to-r from-amber-500 to-indigo-500 h-2 rounded-full transition-all duration-300" style="width: ${sprintProgressPct}%"></div>
+              </div>
+            </div>
+          </div>
+        `;
+        sprintBannerContainer.appendChild(sprintCard);
+        return;
       }
-    }
 
-    async function toggleTask(taskId, completed) {
+      // Standard Daily GATE & Routine Tasks
+      const isGate = task.category === 'GATE';
+      const container = isGate ? gateContainer : routineContainer;
+
+      const card = document.createElement('div');
+      card.className = `flex items-center justify-between p-3 rounded-lg border transition-all ${
+        task.completed 
+          ? 'bg-slate-100 dark:bg-slate-800/80 border-indigo-500/40 text-slate-900 dark:text-slate-200' 
+          : 'bg-white dark:bg-slate-900/50 border-slate-200 dark:border-slate-700/50 text-slate-600 dark:text-slate-400 hover:border-slate-400 dark:hover:border-slate-600'
+      }`;
+
+      card.innerHTML = `
+        <div class="flex items-center justify-between w-full select-none">
+          <label class="flex items-center gap-3 cursor-pointer">
+            <input 
+              type="checkbox" 
+              ${task.completed ? 'checked' : ''} 
+              onchange="toggleTask('${task.task_id}', this.checked, document.getElementById('hrs-${task.task_id}').value)"
+              class="w-5 h-5 rounded border-slate-300 dark:border-slate-600 text-indigo-600 focus:ring-indigo-500 bg-white dark:bg-slate-900 cursor-pointer"
+            />
+            <span class="text-sm font-medium ${task.completed ? 'line-through opacity-70 text-slate-500 dark:text-slate-400' : 'text-slate-800 dark:text-slate-200'}">
+              ${task.title}
+            </span>
+          </label>
+          
+          <div class="flex items-center gap-2">
+            <input 
+              type="number" 
+              id="hrs-${task.task_id}" 
+              step="0.5" 
+              value="${task.hours_spent}" 
+              onchange="toggleTask('${task.task_id}', ${task.completed}, this.value)"
+              class="w-12 bg-slate-50 dark:bg-slate-900 border border-slate-300 dark:border-slate-700 text-xs text-indigo-600 dark:text-indigo-300 p-1 rounded text-center focus:outline-none" 
+              title="Hours spent"
+            />
+            <span class="text-[10px] text-slate-400">h</span>
+            <button onclick="deleteTask('${task.task_id}')" class="text-slate-400 hover:text-red-500 p-1 cursor-pointer">
+              <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
+            </button>
+          </div>
+        </div>
+      `;
+      container.appendChild(card);
+    });
+
+    document.getElementById('completed-count').innerText = completedCount;
+    document.getElementById('total-count').innerText = totalCount;
+    const pct = totalCount > 0 ? Math.round((completedCount / totalCount) * 100) : 0;
+    document.getElementById('progress-ring').innerText = `${pct}% Complete`;
+
+  } catch (err) {
+    console.error("Failed to fetch logs:", err);
+  }
+}
+    async function toggleTask(taskId, completed, hoursSpent = 1.0) {
       try {
         await fetch(`${API_BASE}/logs/toggle`, {
           method: 'POST',
@@ -238,7 +573,8 @@
           body: JSON.stringify({
             task_id: taskId,
             log_date: selectedDate,
-            completed: completed
+            completed: completed,
+            hours_spent: parseFloat(hoursSpent) || 1.0
           })
         });
         await loadDashboard();
@@ -251,8 +587,10 @@
       try {
         const res = await fetch(`${API_BASE}/analytics/comparative`);
         const data = await res.json();
+        const isDark = document.documentElement.classList.contains('dark');
         
         document.getElementById('avg-indicator').innerText = `${data.group_average_pct}%`;
+        document.getElementById('decay-badge').innerText = `Decay α = ${data.decay_factor_alpha}/day ${data.is_sprint_active ? '(Sprint Active 🛡️)' : ''}`;
 
         const labels = data.tasks.map(t => t.title);
         const shares = data.tasks.map(t => t.effort_share_pct);
@@ -289,7 +627,7 @@
               legend: { display: false },
               tooltip: {
                 callbacks: {
-                  label: (ctx) => ` Share: ${ctx.raw}% (Group Avg: ${groupAvg}%)`
+                  label: (ctx) => ` Effort Share: ${ctx.raw}% (Group Avg: ${groupAvg}%)`
                 }
               },
               annotation: {
@@ -306,7 +644,7 @@
                       content: `Avg: ${groupAvg}%`,
                       position: 'end',
                       backgroundColor: 'rgba(245, 158, 11, 0.2)',
-                      color: '#fef08a',
+                      color: isDark ? '#fef08a' : '#92400e',
                       font: { size: 10 }
                     }
                   }
@@ -316,12 +654,12 @@
             scales: {
               x: {
                 beginAtZero: true,
-                grid: { color: 'rgba(51, 65, 85, 0.4)' },
-                ticks: { color: '#94a3b8', callback: (val) => val + '%' }
+                grid: { color: isDark ? 'rgba(51, 65, 85, 0.4)' : 'rgba(203, 213, 225, 0.6)' },
+                ticks: { color: isDark ? '#94a3b8' : '#64748b', callback: (val) => val + '%' }
               },
               y: {
                 grid: { display: false },
-                ticks: { color: '#e2e8f0', font: { size: 11 } }
+                ticks: { color: isDark ? '#e2e8f0' : '#1e293b', font: { size: 11 } }
               }
             }
           }
@@ -336,9 +674,10 @@
       try {
         const res = await fetch(`${API_BASE}/analytics/line-trend`);
         const data = await res.json();
+        const isDark = document.documentElement.classList.contains('dark');
 
         const dates = data.trend.map(d => d.log_date);
-        const totals = data.trend.map(d => d.total_completed);
+        const totals = data.trend.map(d => d.total_hours_completed);
 
         const ctx = document.getElementById('lineChart').getContext('2d');
         if (lineChartInstance) lineChartInstance.destroy();
@@ -348,7 +687,7 @@
           data: {
             labels: dates.length > 0 ? dates : ['Today'],
             datasets: [{
-              label: 'Completed Tasks',
+              label: 'Hours Spent',
               data: totals.length > 0 ? totals : [0],
               borderColor: '#10b981',
               backgroundColor: 'rgba(16, 185, 129, 0.1)',
@@ -364,14 +703,13 @@
             plugins: { legend: { display: false } },
             scales: {
               x: {
-                grid: { color: 'rgba(51, 65, 85, 0.4)' },
-                ticks: { color: '#94a3b8', font: { size: 10 } }
+                grid: { color: isDark ? 'rgba(51, 65, 85, 0.4)' : 'rgba(203, 213, 225, 0.6)' },
+                ticks: { color: isDark ? '#94a3b8' : '#64748b', font: { size: 10 } }
               },
               y: {
                 beginAtZero: true,
-                max: 12,
-                grid: { color: 'rgba(51, 65, 85, 0.4)' },
-                ticks: { color: '#94a3b8', stepSize: 2 }
+                grid: { color: isDark ? 'rgba(51, 65, 85, 0.4)' : 'rgba(203, 213, 225, 0.6)' },
+                ticks: { color: isDark ? '#94a3b8' : '#64748b', stepSize: 2 }
               }
             }
           }
@@ -382,6 +720,285 @@
       }
     }
 
+    // SPOTLIGHT GUIDED TOUR LOGIC WITH HIGHLIGHTED CUTOUT & THEME ADAPTATION
+    let currentTourStep = 0;
+    let activeHighlightedElement = null;
+
+    const tourSteps = [
+      {
+        targetId: 'date-picker-container',
+        title: '📅 Back-Filling & Historical Analysis',
+        description: 'Use this date picker to jump back to past months! Back-filling past notes updates your real-time effort share and calculates exponential memory decay.',
+        position: 'bottom'
+      },
+      {
+        targetId: 'gate-tasks-container',
+        title: '⏱️ Weighted Hours Checklist',
+        description: 'Log exact hours (e.g., 4.0h on OS vs 1.0h on Math). The tracker multiplies time spent by decay to reflect true workload balance.',
+        position: 'right'
+      },
+      {
+        targetId: 'barChart',
+        title: '📊 Time-Decayed Effort Share',
+        description: 'Unrevised subjects decay by 10% daily. Any subject falling below the 8.3% group mean target line turns RED to alert you immediately.',
+        position: 'left'
+      },
+      {
+        targetId: 'sprint-banner-container',
+        title: '⚡ 3–5 Day Active Focus Sprints',
+        description: 'During active coding sprints, decay slows down to α = 0.97 (Damping). Matrix Mapping automatically routes credit into target GATE subjects!',
+        position: 'bottom'
+      }
+    ];
+
+    function openGuideModal() {
+      currentTourStep = 0;
+      document.getElementById('tour-overlay').classList.remove('hidden');
+      renderTourStep();
+    }
+
+    function endTour() {
+      if (activeHighlightedElement) {
+        activeHighlightedElement.classList.remove('tour-spotlight-active');
+        activeHighlightedElement = null;
+      }
+      document.getElementById('tour-overlay').classList.add('hidden');
+    }
+
+    function nextTourStep() {
+      if (currentTourStep < tourSteps.length - 1) {
+        currentTourStep++;
+        renderTourStep();
+      } else {
+        endTour();
+      }
+    }
+
+    function prevTourStep() {
+      if (currentTourStep > 0) {
+        currentTourStep--;
+        renderTourStep();
+      }
+    }
+
+    function renderTourStep() {
+      // Clear previous active element highlight
+      if (activeHighlightedElement) {
+        activeHighlightedElement.classList.remove('tour-spotlight-active');
+        activeHighlightedElement = null;
+      }
+
+      const step = tourSteps[currentTourStep];
+      const targetEl = document.getElementById(step.targetId);
+      const popover = document.getElementById('tour-popover');
+      
+      document.getElementById('tour-step-badge').innerText = `Step ${currentTourStep + 1} of ${tourSteps.length}`;
+      document.getElementById('tour-title').innerText = step.title;
+      document.getElementById('tour-description').innerText = step.description;
+      
+      document.getElementById('tour-prev-btn').disabled = (currentTourStep === 0);
+      document.getElementById('tour-next-btn').innerText = (currentTourStep === tourSteps.length - 1) ? 'Finish 🎉' : 'Next →';
+
+      if (!targetEl) return;
+
+      // Elevate the targeted UI element above the tour backdrop
+      targetEl.classList.add('tour-spotlight-active');
+      activeHighlightedElement = targetEl;
+
+      targetEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+
+      setTimeout(() => {
+        const rect = targetEl.getBoundingClientRect();
+        const popoverWidth = 320;
+        let top = rect.bottom + window.scrollY + 20;
+        let left = rect.left + window.scrollX;
+
+        if (step.position === 'right') {
+          top = rect.top + window.scrollY;
+          left = rect.right + window.scrollX + 20;
+        } else if (step.position === 'left') {
+          top = rect.top + window.scrollY;
+          left = rect.left + window.scrollX - popoverWidth - 20;
+        } else if (step.position === 'bottom') {
+          top = rect.bottom + window.scrollY + 20;
+          left = rect.left + window.scrollX;
+        }
+
+        if (left + popoverWidth > window.innerWidth - 20) {
+          left = window.innerWidth - popoverWidth - 20;
+        }
+        if (left < 20) left = 20;
+
+        popover.style.top = `${top}px`;
+        popover.style.left = `${left}px`;
+      }, 200);
+    }
+
+    // THEME MANAGEMENT
+    function initTheme() {
+      const savedTheme = localStorage.getItem('app-theme') || 'dark';
+      applyTheme(savedTheme);
+    }
+
+    function toggleTheme() {
+      const currentTheme = document.documentElement.classList.contains('dark') ? 'dark' : 'light';
+      const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
+      localStorage.setItem('app-theme', newTheme);
+      applyTheme(newTheme);
+      
+      if (typeof loadDashboard === 'function') {
+        loadDashboard();
+      }
+    }
+
+    function applyTheme(theme) {
+      const html = document.documentElement;
+      const themeText = document.getElementById('theme-text');
+      const themeIcon = document.getElementById('theme-icon');
+
+      if (theme === 'dark') {
+        html.classList.add('dark');
+        if (themeText) themeText.innerText = 'Light';
+        if (themeIcon) {
+          themeIcon.setAttribute('data-lucide', 'sun');
+          themeIcon.className = 'w-4 h-4 text-amber-400';
+        }
+      } else {
+        html.classList.remove('dark');
+        if (themeText) themeText.innerText = 'Dark';
+        if (themeIcon) {
+          themeIcon.setAttribute('data-lucide', 'moon');
+          themeIcon.className = 'w-4 h-4 text-indigo-600';
+        }
+      }
+      lucide.createIcons();
+    }
+
+    // MODERN UI TOAST NOTIFICATION
+    function showToast(message, type = 'info') {
+      const container = document.getElementById('toast-container');
+      const toast = document.createElement('div');
+      
+      const isError = type === 'error';
+      toast.className = `pointer-events-auto flex items-center gap-2.5 px-4 py-3 rounded-xl border shadow-xl text-xs font-semibold transition-all duration-300 transform translate-y-2 opacity-0 ${
+        isError 
+          ? 'bg-red-50 dark:bg-red-950/90 border-red-200 dark:border-red-800 text-red-700 dark:text-red-200' 
+          : 'bg-slate-900 dark:bg-slate-800 border-indigo-500/40 text-white'
+      }`;
+
+      toast.innerHTML = `
+        <i data-lucide="${isError ? 'alert-circle' : 'check-circle-2'}" class="w-4 h-4 ${isError ? 'text-red-500' : 'text-emerald-400'}"></i>
+        <span>${message}</span>
+      `;
+
+      container.appendChild(toast);
+      lucide.createIcons();
+
+      // Animate in
+      requestAnimationFrame(() => {
+        toast.classList.remove('translate-y-2', 'opacity-0');
+      });
+
+      // Auto dismiss after 3s
+      setTimeout(() => {
+        toast.classList.add('opacity-0', 'translate-y-2');
+        setTimeout(() => toast.remove(), 300);
+      }, 3000);
+    }
+
+    // CUSTOM MODAL CONFIRMATION FOR DELETE
+    let pendingDeleteTaskId = null;
+
+    function deleteTask(taskId) {
+      pendingDeleteTaskId = taskId;
+      const modal = document.getElementById('confirm-modal');
+      const confirmBtn = document.getElementById('confirm-delete-btn');
+      
+      modal.classList.remove('hidden');
+      confirmBtn.onclick = async () => {
+        try {
+          await fetch(`${API_BASE}/tasks/${pendingDeleteTaskId}`, { method: 'DELETE' });
+          closeConfirmModal();
+          showToast('Task deleted successfully');
+          await loadDashboard();
+        } catch (err) {
+          console.error("Failed to delete task:", err);
+          showToast("Failed to delete item", "error");
+        }
+      };
+    }
+
+    function closeConfirmModal() {
+      document.getElementById('confirm-modal').classList.add('hidden');
+      pendingDeleteTaskId = null;
+    }
+
+    // UPDATED SUBMIT TASK WITH TOAST INSTEAD OF ALERT
+    async function submitNewTask() {
+      const title = document.getElementById('modal-task-title').value.trim();
+      const category = document.getElementById('modal-task-category').value;
+      if (!title) return showToast("Please enter a title for the task", "error");
+
+      const isSprint = (category === 'Sprint');
+      const sprintDays = parseInt(document.getElementById('modal-sprint-days').value) || 3;
+
+      const payload = {
+        title: title,
+        category: isSprint ? 'Project Sprint' : category,
+        is_sprint: isSprint,
+        sprint_duration_days: sprintDays,
+        selected_gate_tags: Array.from(selectedTags)
+      };
+
+      try {
+        const res = await fetch(`${API_BASE}/tasks`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+
+        if (!res.ok) {
+          const errData = await res.json();
+          return showToast(errData.detail || "Task already exists", "error");
+        }
+
+        selectedTags.clear();
+        document.getElementById('modal-task-title').value = '';
+        closeAddTaskModal();
+        showToast(isSprint ? 'Sprint created with auto-routing!' : 'Task created successfully!');
+        await loadDashboard();
+      } catch (err) {
+        console.error("Failed to create task:", err);
+        showToast("Error connecting to server", "error");
+      }
+    }
+    async function changeDay(offsetDays) {
+  try {
+    // Parse current active ISO date (YYYY-MM-DD)
+    const [year, month, day] = selectedDate.split('-').map(Number);
+    const currentDateObj = new Date(year, month - 1, day);
+    
+    // Add/subtract offset days
+    currentDateObj.setDate(currentDateObj.getDate() + offsetDays);
+    
+    // Format back to ISO string YYYY-MM-DD
+    const newYear = currentDateObj.getFullYear();
+    const newMonth = String(currentDateObj.getMonth() + 1).padStart(2, '0');
+    const newDay = String(currentDateObj.getDate()).padStart(2, '0');
+    
+    selectedDate = `${newYear}-${newMonth}-${newDay}`;
+    document.getElementById('date-picker').value = selectedDate;
+    
+    // Refresh dashboard logs and decay charts for the newly selected date
+    await loadDashboard();
+  } catch (err) {
+    console.error("Failed to change day:", err);
+    showToast("Error shifting date", "error");
+  }
+}
+
+
+    initTheme();
     window.onload = init;
   </script>
 </body>
